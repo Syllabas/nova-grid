@@ -125,7 +125,7 @@ wss.on('connection', (ws) => {
       case 'create': {
         leave(ws);
         const code = newCode();
-        const r = { code, host: ws.id, players: new Map(), cfg: { circ: 0, ai: 1, fill: 40 }, inRace: false, points: {} };
+        const r = { code, host: ws.id, players: new Map(), cfg: { circ: 0, ai: 1, fill: 40, mode: 0, gi: 0 }, inRace: false, points: {} };
         rooms.set(code, r);
         r.players.set(ws.id, { id: ws.id, ws, name: clean(m.name), liv: cleanLiv(m.liv) });
         ws.room = code; lobby(r); break;
@@ -140,19 +140,21 @@ wss.on('connection', (ws) => {
         ws.room = r.code; lobby(r); break;
       }
       case 'leave': leave(ws); break;
+      case 'liv': if (room && !room.inRace) { const pl = room.players.get(ws.id); if (pl) { pl.liv = cleanLiv(m.liv); lobby(room); } } break;
       case 'ttsub': ttSubmit(m); send(ws, { t: 'ttboard', circ: m.circ, rows: ttRows(m.circ) }); break;
       case 'ttget': send(ws, { t: 'ttboard', circ: m.circ, rows: ttRows(m.circ) }); break;
       case 'ttghost': {
-        const best = Object.values(tt[m.circ] || {}).filter((r) => r.ghost && r.gv === 2).sort((a, b) => a.total - b.total)[0];
+        const pool = Object.values(tt[m.circ] || {}).filter((r) => r.ghost && r.gv === 2);
+        const best = (m.name && pool.find((r) => r.name === m.name)) || pool.sort((a, b) => a.total - b.total)[0];
         if (best) send(ws, { t: 'ttghostdata', circ: m.circ, name: best.name, total: best.total, ghost: best.ghost, hull: best.hull });
         break;
       }
       case 'cfg':
         if (room && room.host === ws.id && !room.inRace) {
-          room.cfg = { circ: m.cfg.circ | 0, ai: m.cfg.ai | 0, fill: m.cfg.fill | 0 }; lobby(room);
+          room.cfg = { circ: Math.min(5, m.cfg.circ | 0), ai: Math.min(4, m.cfg.ai | 0), fill: Math.min(120, m.cfg.fill | 0) || 40, mode: Math.min(2, Math.max(0, m.cfg.mode | 0)), gi: Math.min(5, Math.max(0, m.cfg.gi | 0)) }; lobby(room);
         } break;
       case 'start':
-        if (room && room.host === ws.id && !room.inRace) { room.inRace = true; broadcast(room, m); } break;
+        if (room && room.host === ws.id && !room.inRace) { room.inRace = true; if (m.reset) room.points = {}; broadcast(room, m); } break;
       case 'st':
         if (room && room.inRace) broadcast(room, { t: 'st', id: ws.id, d: m.d }, ws); break;
       case 'ai':

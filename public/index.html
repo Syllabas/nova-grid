@@ -221,12 +221,19 @@ body.touch #touch{display:flex}
       <div id="lbRoom" hidden>
         <div class="split"><div class="big" id="lbCode">ABCD</div><p>Donne ce code à tes potes : ils ouvrent la même page, choisissent <b>En ligne</b> et le tapent.</p></div>
         <div class="lbgrid">
-          <div><div class="lbl">PILOTES DANS LE SALON</div><ul id="lbPlayers"></ul></div>
+          <div class="card" style="max-width:none;gap:.7cqw">
+            <div class="lbl">PILOTES DANS LE SALON</div><ul id="lbPlayers"></ul>
+            <div class="lbl" style="margin-top:.6cqw">TON BOLIDE</div>
+            <div class="ctl" style="align-items:flex-start"><div class="seg" id="lbHull" style="max-width:24cqw"></div><canvas id="lbPrev" width="200" height="110" style="width:7.6cqw;height:4.2cqw;border:1px solid var(--line);border-radius:.5cqw;background:var(--panel)"></canvas></div>
+            <div class="colpick"><input type="range" id="lbh1" class="hue" min="0" max="359" aria-label="Teinte de la coque"><input type="range" id="lbt1" class="tone" min="0" max="100" aria-label="Nuance de la coque"><span class="chip" id="lbsw1"></span></div>
+            <div class="colpick"><input type="range" id="lbh2" class="hue" min="0" max="359" aria-label="Teinte de la bande"><input type="range" id="lbt2" class="tone" min="0" max="100" aria-label="Nuance de la bande"><span class="chip" id="lbsw2"></span></div>
+          </div>
           <div class="card" style="max-width:none;gap:.9cqw">
-            <div class="opt"><span class="lbl">CIRCUIT</span><div class="seg" id="lbCirc"></div></div>
+            <div class="opt"><span class="lbl">FORMAT</span><div class="seg" id="lbMode"></div></div>
+            <div class="opt" id="lbCircRow"><span class="lbl">CIRCUIT</span><div class="seg" id="lbCirc"></div></div>
             <div class="opt"><span class="lbl">NIVEAU IA</span><div class="seg" id="lbAi"></div></div>
             <div class="opt"><span class="lbl">PELOTON</span><div class="seg" id="lbFill"></div></div>
-            <div class="lbl" id="lbPtsH">POINTS DU SALON</div><div class="tbl" id="lbPts" style="max-height:18cqh"></div>
+            <div class="lbl" id="lbPtsH">POINTS DU SALON</div><div class="tbl" id="lbPts" style="max-height:16cqh"></div>
           </div>
         </div>
         <div class="ctl"><button class="go" id="lbStart">LANCER LA COURSE</button><span class="note" id="lbWait"></span><button class="go ghost" id="lbLeave">QUITTER LE SALON</button></div>
@@ -835,17 +842,21 @@ segInit('diffSel',DIFF.map(d=>d.n),1,i=>{aiLevel=i});
 segInit('fieldSel',['Normal · 120','Hardcore · 240'],0,i=>{NR=i?240:120;makeDrivers();previewCircuit(champMode==='single'||champMode==='tt'?singleCirc:0);$('menuKick').textContent=`CHAMPIONNAT ANTIGRAVITÉ · ${NR} PILOTES · ${NR/4} ÉCURIES`});
 $('menuName').value=pName;$('menuName').addEventListener('input',e=>{pName=e.target.value.replace(/[<>]/g,'').trim().slice(0,16);try{localStorage.setItem('novagrid-name',pName)}catch(_){}
   if(drivers[0]){drivers[0].name=myName();for(const r of racers)if(r.dr===drivers[0])r.name=myName()}});
-segInit('ghostSel',['Mon record','Record en ligne'],0,i=>{ghostSrc=i});
+segInit('ghostSel',['Mon record','Record en ligne'],0,i=>{ghostSrc=i;ghostName=null});
 segInit('sndSel',SND,sndMode,i=>setSound(i));
 segInit('nameSel',['Numéros','Noms proches','Aucun'],0,i=>{nameMode=i});
 function applyLivery(){const t=teams[0];if(!t)return;t.prim=c1();t.sec=c2();t.dark=darken(t.prim);for(const r of racers)if(r.dr.team===0){r.col=t.prim;r.sec=t.sec;r.dark=t.dark}drawHullPrev()}
-function syncPick(){for(const k of['1','2']){const h=liv['h'+k],t=liv['t'+k];$('h'+k).value=h;$('t'+k).value=t;
-    $('t'+k).style.background=`linear-gradient(90deg,${toneHex(h,0)},${toneHex(h,50)},${toneHex(h,90)},${toneHex(h,100)})`;$('sw'+k).style.background=toneHex(h,t)}}
-for(const id of['h1','t1','h2','t2'])$(id).addEventListener('input',e=>{liv[id]=+e.target.value;syncPick();applyLivery();try{localStorage.setItem('novagrid-livery',JSON.stringify(liv))}catch(_){}});
+function syncPick(){for(const pre of['','lb'])for(const k of['1','2']){const h=liv['h'+k],t=liv['t'+k];$(pre+'h'+k).value=h;$(pre+'t'+k).value=t;
+    $(pre+'t'+k).style.background=`linear-gradient(90deg,${toneHex(h,0)},${toneHex(h,50)},${toneHex(h,90)},${toneHex(h,100)})`;$(pre+'sw'+k).style.background=toneHex(h,t)}}
+let livSendT=0;function livChanged(){syncPick();applyLivery();try{localStorage.setItem('novagrid-livery',JSON.stringify(liv))}catch(_){}
+  if(net.code&&!net.inRace){clearTimeout(livSendT);livSendT=setTimeout(()=>send({t:'liv',liv:myLiv()}),150)}}
+for(const id of['h1','t1','h2','t2'])for(const pre of['','lb'])$(pre+id).addEventListener('input',e=>{liv[id]=+e.target.value;livChanged()});
 syncPick();
-segInit('hullSel',HULLS,0,i=>{playerHull=i;teams[0].hull=i;for(const r of racers)if(r.dr.team===0)r.hull=i;drawHullPrev()});
+function setHull(i){playerHull=i;if(teams[0])teams[0].hull=i;for(const r of racers)if(r.dr.team===0)r.hull=i;for(const id of['hullSel','lbHull'])$(id).querySelectorAll('button').forEach((b,k)=>b.setAttribute('aria-pressed',k===i));drawHullPrev();livChanged()}
+segInit('hullSel',HULLS,0,setHull);segInit('lbHull',HULLS,0,setHull);
 const hp=$('hullPrev').getContext('2d');
-function drawHullPrev(){hp.clearRect(0,0,200,110);const r={col:c1(),sec:c2(),dark:darken(c1()),eng:'#7ff0ff',hull:playerHull,bank:0,boostT:0,id:0,pit:false};drawShip(hp,100,92,4.2,r,0)}
+const lbp=$('lbPrev').getContext('2d');
+function drawHullPrev(){const r={col:c1(),sec:c2(),dark:darken(c1()),eng:'#7ff0ff',hull:playerHull,bank:0,boostT:0,id:0,pit:false};for(const c of[hp,lbp]){c.clearRect(0,0,200,110);drawShip(c,100,92,4.2,r,0)}}
 
 function previewCircuit(ci){loadTrack(ci);const order=drivers.slice().sort((a,b)=>b.skill-a.skill);const p=order.indexOf(drivers[0]);order.splice(p,1);order.splice(Math.floor(NR/2)-2,0,drivers[0]);setupRace(order)}
 function newChampionship(){
@@ -917,6 +928,7 @@ function teamStand(){return teams.map((t,i)=>{const ds=drivers.filter(d=>d.team=
 function standings(){return drivers.slice().sort((a,b)=>b.pts-a.pts||bestRes(a)-bestRes(b)||b.skill-a.skill)}
 const bestRes=d=>{const r=d.res.filter(x=>x>0);return r.length?Math.min(...r):999};
 function renderTab(which){
+  if(net.code&&lastOnline&&state==='results'){renderOnline(which==='champ'?'champ':'race');return}
   $('tabRace').setAttribute('aria-selected',which==='race');$('tabChamp').setAttribute('aria-selected',which==='champ');$('tabTeams').setAttribute('aria-selected',which==='teams');
   if(which==='teams'){const ts=teamStand();
     $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>ÉCURIE</th><th>PILOTES</th>'+champ.list.map((c,i)=>`<th class="n">GP${i+1}</th>`).join('')+'<th class="n">TOTAL</th></tr></thead><tbody>'+
@@ -948,11 +960,11 @@ function saveRecord(v){recCache[recKey()]=v;try{localStorage.setItem(recKey(),JS
 function ghostDelta(){if(!ghost||!ghost.g.length||state==='count')return null;const g=ghost.g,p0=player.lap*L+player.s;if(p0>g[g.length-1][0])return null;let lo=0,hi=g.length-1;
   while(lo<hi){const m=(lo+hi)>>1;if(g[m][0]<p0)lo=m+1;else hi=m}
   const a=g[Math.max(0,lo-1)],b=g[lo],f=b[0]>a[0]?(p0-a[0])/(b[0]-a[0]):1;return raceT-(Math.max(0,lo-1)+f)*GSTEP}
-let ghostSrc=0,ttBoard=null,ttTab='laps';
+let ghostName=null,ghostSrc=0,ttBoard=null,ttTab='laps';
 function newTT(){initAudio();if(ac&&ac.state==='suspended')ac.resume();if(!drivers.length)makeDrivers();drivers[0].name=myName();applyLivery();
   loadTrack(singleCirc);mode='tt';player=mkRacer(drivers[0],0,0);player.lap=0;player.tb=3;racers=[player];raceT=0;lapStart=0;ttLaps=[];ghostRec=[];ghostT=0;parts.length=0;camH=null;
   const rec=ttRecord();ghost=rec.ghost&&rec.gv===2?{g:rec.ghost,hull:rec.hull,name:'ton record'}:null;sortAll();
-  if(ghostSrc===1&&net.ok)send({t:'ttghost',circ:circ.name});
+  if(ghostSrc===1&&net.ok)send({t:'ttghost',circ:circ.name,name:ghostName});
   $('gpTag').textContent='CONTRE-LA-MONTRE · '+circ.name.toUpperCase();
   show(null);state='count';countNext='tt';countT=3.999;lastCount=-1}
 function showTT(){
@@ -973,9 +985,10 @@ function renderTT(){
   const rows=ttTab==='local'?(rec.runs||[]).map(r=>({name:r.n,total:r.t,lap:r.l,d:r.d})):(ttBoard&&ttBoard.circ===circ.name?ttBoard.rows:null);
   if(!rows){$('resTbl').innerHTML='<p class="note" style="padding:1cqw">Chargement du classement…</p>';return}
   const byLap=rows.slice().sort((a,b)=>a.lap-b.lap),lapRank=new Map(byLap.map((r,i)=>[r,i+1]));
-  $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>PILOTE</th><th class="n">TOTAL 3 TOURS</th><th class="n">MEILLEUR TOUR</th><th class="n">RANG TOUR</th>'+(ttTab==='local'?'<th class="n">DATE</th>':'')+'</tr></thead><tbody>'+
-    rows.map((r,i)=>`<tr class="${r.name===myName()&&(ttTab==='online'||Math.abs(r.total-player.ftime)<0.006)?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${esc(r.name)}</td><td class="n">${fmt(r.total)}</td><td class="n${lapRank.get(r)===1?' fl':''}">${fmt(r.lap)}</td><td class="n t">${lapRank.get(r)}</td>`+(ttTab==='local'?`<td class="n t">${new Date(r.d).toLocaleDateString('fr-FR')}</td>`:'')+'</tr>').join('')+'</tbody></table>';
-  if(ttTab==='online')$('resTbl').insertAdjacentHTML('beforeend',`<div class="ctl" style="padding:.8cqw"><button class="go ghost" id="ttChal">AFFRONTER LE FANTÔME DU N°1 (3 TOURS)</button></div>`),$('ttChal').addEventListener('click',()=>{ghostSrc=1;newTT()});
+  $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>PILOTE</th><th class="n">TOTAL 3 TOURS</th><th class="n">MEILLEUR TOUR</th><th class="n">RANG TOUR</th>'+(ttTab==='local'?'<th class="n">DATE</th>':'<th class="n">FANTÔME</th>')+'</tr></thead><tbody>'+
+    rows.map((r,i)=>`<tr class="${r.name===myName()&&(ttTab==='online'||Math.abs(r.total-player.ftime)<0.006)?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${esc(r.name)}</td><td class="n">${fmt(r.total)}</td><td class="n${lapRank.get(r)===1?' fl':''}">${fmt(r.lap)}</td><td class="n t">${lapRank.get(r)}</td>`+(ttTab==='local'?`<td class="n t">${new Date(r.d).toLocaleDateString('fr-FR')}</td>`:`<td class="n">${r.ghost?`<button class="go ghost dueler" data-n="${esc(r.name)}" style="font-size:1.1cqw;padding:.3cqw .9cqw">DÉFIER</button>`:''}</td>`)+'</tr>').join('')+'</tbody></table>';
+  if(ttTab==='online')$('resTbl').insertAdjacentHTML('beforeend',`<div class="ctl" style="padding:.8cqw"><button class="go ghost" id="ttChal">AFFRONTER LE FANTÔME DU N°1 (3 TOURS)</button></div>`),$('ttChal').addEventListener('click',()=>{ghostSrc=1;ghostName=null;newTT()});
+  $('resTbl').querySelectorAll('.dueler').forEach(b=>b.addEventListener('click',()=>{ghostSrc=1;ghostName=b.dataset.n;newTT()}));
 }
 const canPause=()=>!net.inRace&&['race','count','quali','tt','done'].includes(state);
 function togglePause(){if(!paused&&!canPause())return;paused=!paused;$('pauseOv').hidden=!paused;
@@ -1007,6 +1020,8 @@ $('lbLeave').addEventListener('click',()=>{leaveRoom();state='menu';show('menu')
 function leaveRoom(){send({t:'leave'});net.code='';net.inRace=false;net.points={};makeDrivers();previewCircuit(0)}
 function backToLobby(){state='lobby';openLobby();renderLobby()}
 const FILLS=[[12,'12'],[40,'40'],[80,'80'],[120,'120']];
+const CH_LISTS=[null,[0,1,2],[0,1,2,3,4,5]];
+segInit('lbMode',['Course unique','Championnat 3 GP','Championnat 6 GP'],0,i=>{if(isHost()){net.cfg.mode=i;net.cfg.gi=0;send({t:'cfg',cfg:net.cfg})}});
 segInit('lbCirc',CIRCUITS.map(c=>c.name),0,i=>{if(isHost()){net.cfg.circ=i;send({t:'cfg',cfg:net.cfg})}});
 segInit('lbAi',DIFF.map(d=>d.n),1,i=>{if(isHost()){net.cfg.ai=i;send({t:'cfg',cfg:net.cfg})}});
 segInit('lbFill',FILLS.map(f=>f[1]+' bolides'),1,i=>{if(isHost()){net.cfg.fill=FILLS[i][0];send({t:'cfg',cfg:net.cfg})}});
@@ -1014,8 +1029,13 @@ function setSeg(id,i){$(id).querySelectorAll('button').forEach((b,k)=>{b.setAttr
 function renderLobby(){
   $('lbJoin').hidden=true;$('lbRoom').hidden=false;$('lbCode').textContent=net.code;
   $('lbPlayers').innerHTML=net.players.map(p=>`<li><span class="sw" style="background:${p.liv.c1};border-color:${p.liv.c2}"></span>${esc(p.name)}${p.id===net.host?' <small>HÔTE</small>':''}${p.id===net.id?' <small>TOI</small>':''}</li>`).join('');
+  const md=net.cfg.mode|0,lst=CH_LISTS[md],gi=net.cfg.gi|0;setSeg('lbMode',md);$('lbCircRow').hidden=md>0;
+  setSeg('lbHull',playerHull);$('lbHull').querySelectorAll('button').forEach(b=>b.disabled=false);
   setSeg('lbCirc',net.cfg.circ);setSeg('lbAi',net.cfg.ai);setSeg('lbFill',FILLS.findIndex(f=>f[0]===net.cfg.fill));
-  $('lbStart').hidden=!isHost();$('lbWait').textContent=isHost()?`${net.players.length} joueur${net.players.length>1?'s':''} · les IA complètent le peloton`:'En attente du lancement par l\'hôte…';
+  $('lbStart').hidden=!isHost();$('lbStart').textContent=md?`LANCER LE GP ${gi+1}/${lst.length}`:'LANCER LA COURSE';
+  const nxt=md?`Prochain : GP ${gi+1}/${lst.length} · ${CIRCUITS[lst[gi]].name}. `:'';
+  $('lbWait').textContent=nxt+(isHost()?`${net.players.length} joueur${net.players.length>1?'s':''} sur 16 · les IA complètent le peloton`:'En attente du lancement par l\'hôte…');
+  $('lbPtsH').textContent=md?`CHAMPIONNAT · ${gi===0&&!Object.keys(net.points).length?'':'APRÈS '+(gi||lst.length)+' GP'}`:'POINTS DU SALON';
   const pts=Object.entries(net.points).sort((a,b)=>b[1]-a[1]);$('lbPtsH').hidden=$('lbPts').hidden=!pts.length;
   $('lbPts').innerHTML='<table><tbody>'+pts.map(([n,v],i)=>`<tr><td class="p">${i+1}</td><td>${esc(n)}</td><td class="n">${v}</td></tr>`).join('')+'</tbody></table>';
 }
@@ -1030,11 +1050,12 @@ $('lbStart').addEventListener('click',()=>{
   const grid=pool.slice(0,nAi).sort((a,b)=>b.sk-a.sk).map(x=>'a'+x.i);
   const hs=humans.map((h,k)=>'h'+k).sort(()=>Math.random()-.5);const span=Math.min(grid.length+hs.length,24);
   for(const tok of hs)grid.splice(Math.floor(Math.random()*Math.min(span,grid.length+1)),0,tok);
-  send({t:'start',seed:sd,circ:net.cfg.circ,ai:net.cfg.ai,humans,grid});
+  const md=net.cfg.mode|0,lst=CH_LISTS[md],gi=net.cfg.gi|0,reset=md>0&&gi===0;if(reset)net.points={};
+  send({t:'start',seed:sd,circ:md?lst[gi]:net.cfg.circ,ai:net.cfg.ai,humans,grid,gp:md?{i:gi,n:lst.length}:null,reset});
 });
 function startOnline(m){
   NR=120;
-  net.inRace=true;net.firstFin=0;net.sendT=0;net.aiT=0;net.abort=false;champ={list:[m.circ],i:0};
+  net.inRace=true;net.gp=m.gp||null;if(m.reset)net.points={};net.firstFin=0;net.sendT=0;net.aiT=0;net.abort=false;champ={list:[m.circ],i:0};
   makeDrivers(m.seed,true);aiLevel=m.ai;loadTrack(m.circ);
   m.humans.forEach((h,k)=>{teams[30+k]={name:h.name,prim:h.liv.c1,sec:h.liv.c2,dark:darken(h.liv.c1),eng:'#7ff0ff',hull:h.liv.h,str:0}});
   const pool=drivers.filter(d=>!d.isP);
@@ -1044,7 +1065,7 @@ function startOnline(m){
   net.byId=new Map();net.ais=[];
   for(const r of racers){if(r.dr.human){net.byId.set(r.dr.netId,r);r.remote=!r.isP;r.maxV=VMAX}else{net.ais.push(r);r.remote=!isHost()}}
   if(!player){player=racers[0]}
-  $('gpTag').textContent='EN LIGNE · '+net.code+' · '+circ.name.toUpperCase();
+  $('gpTag').textContent='EN LIGNE · '+(net.gp?`GP ${net.gp.i+1}/${net.gp.n} · `:'')+circ.name.toUpperCase();
   show(null);state='count';countNext='race';countT=3.999;lastCount=-1;
 }
 function applyTgt(r,a,o,now){
@@ -1077,19 +1098,31 @@ function hostFinish2(){
   sortAll();const cls=rankOrd.slice(),fl=fastestLap(cls);
   const out=cls.map((r,i)=>{const pts=(r.finished&&i<30?POINTS[i]:0)+(r===fl?2:0);if(r.dr.human)net.points[r.name]=(net.points[r.name]||0)+pts;
     return{n:r.name,tm:teams[r.dr.team].name,c:r.col,sc:r.sec,id:r.dr.netId||0,f:r.finished?Math.round(r.ftime*100)/100:null,ko:r.alive?0:r.elap,lap:clamp(r.lap+1,1,LAPS),b:r.best?Math.round(r.best*100)/100:0,p:pts,g:gridOrder.indexOf(r.dr)+1,fl:r===fl?1:0}});
-  send({t:'res',cls:out,circ:circ.name,points:net.points});
+  const gp=net.gp,final=!!(gp&&gp.i===gp.n-1);
+  send({t:'res',cls:out,circ:circ.name,points:net.points,gp,final});
+  if(gp){const nc=Object.assign({},net.cfg,{gi:final?0:gp.i+1});setTimeout(()=>{net.cfg=nc;send({t:'cfg',cfg:nc})},300)}
 }
 function showOnlineResults(m){
   net.inRace=false;state='results';net.points=m.points||net.points;
   const cls=m.cls,me=cls.findIndex(c=>c.id===net.id),mine=cls[me],win=cls[0],fl=cls.find(c=>c.fl);
-  $('resKick').textContent='EN LIGNE · '+m.circ.toUpperCase();
+  lastOnline=m;const champTxt=m.gp?`GP ${m.gp.i+1}/${m.gp.n} · `:'';$('resKick').textContent='EN LIGNE · '+champTxt+m.circ.toUpperCase();
+  const st=Object.entries(m.points||{}).sort((a,b)=>b[1]-a[1]);
   $('resRank').innerHTML=(me+1)+'<span>/'+cls.length+'</span>';
   $('resLine').innerHTML=(mine&&mine.f!=null?`Temps ${fmt(mine.f)}${me>0&&win.f!=null?`, ${fmtGap(mine.f-win.f).slice(1)} s derrière ${esc(win.n)}`:''}. `:mine&&mine.ko?`K.O. au tour ${mine.ko}. `:'')+
-    `<b>${mine?mine.p:0} pts</b> marqués.`+(fl?` Meilleur tour : <b>${esc(fl.n)}</b> en ${fmt(fl.b)} (+2 pts).`:'');
-  $('tabTTL').hidden=$('tabTTR').hidden=$('tabTTO').hidden=true;$('tabRace').hidden=false;$('tabChamp').hidden=true;$('tabTeams').hidden=true;$('tabRace').setAttribute('aria-selected','true');
+    `<b>${mine?mine.p:0} pts</b> marqués.`+(fl?` Meilleur tour : <b>${esc(fl.n)}</b> en ${fmt(fl.b)} (+2 pts).`:'')+
+    (m.gp&&st.length?(m.final?` <b>Champion : ${esc(st[0][0])}</b> avec ${st[0][1]} pts !`:` Championnat : ${esc(st[0][0])} mène avec ${st[0][1]} pts.`):'');
+  $('tabTTL').hidden=$('tabTTR').hidden=$('tabTTO').hidden=true;$('tabRace').hidden=false;$('tabChamp').hidden=!st.length;$('tabTeams').hidden=true;
+  renderOnline(m.final?'champ':'race');$('next').textContent='RETOUR AU SALON';show('res');scrollToMe('resTbl');
+}
+let lastOnline=null;
+function renderOnline(which){const m=lastOnline,cls=m.cls,win=cls[0];
+  $('tabRace').setAttribute('aria-selected',which==='race');$('tabChamp').setAttribute('aria-selected',which==='champ');
+  if(which==='champ'){const st=Object.entries(m.points||{}).sort((a,b)=>b[1]-a[1]),me=net.players.find(p=>p.id===net.id);
+    $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>JOUEUR</th><th class="n">CETTE COURSE</th><th class="n">TOTAL</th></tr></thead><tbody>'+
+      st.map(([n,v],i)=>{const c=cls.find(x=>x.id&&x.n===n);return`<tr class="${me&&me.name===n?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${c?`<span class="sw" style="background:${c.c};border-color:${c.sc}"></span>`:''}${esc(n)}</td><td class="n t">${c&&c.p?'+'+c.p:''}</td><td class="n">${v}</td></tr>`}).join('')+'</tbody></table>';return}
   $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>PILOTE</th><th>ÉCURIE</th><th>GRILLE</th><th class="n">TEMPS</th><th class="n">M. TOUR</th><th class="n">PTS</th></tr></thead><tbody>'+
     cls.map((c,i)=>`<tr class="${c.id===net.id?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td><span class="sw" style="background:${c.c};border-color:${c.sc}"></span>${esc(c.n)}${c.id?' <small style="color:var(--cyan)">JOUEUR</small>':''}</td><td class="t">${esc(c.tm)}</td><td class="t">${c.g}</td><td class="n">${c.f!=null?(i?fmtGap(c.f-win.f):fmt(c.f)):c.ko?'K.O. tour '+c.ko:'tour '+c.lap}</td><td class="n t${c.fl?' fl':''}">${c.b?fmt(c.b):''}</td><td class="n">${c.p||''}</td></tr>`).join('')+'</tbody></table>';
-  $('next').textContent='RETOUR AU SALON';show('res');scrollToMe('resTbl');
+  scrollToMe('resTbl');
 }
 function onNet(m){
   if(m.t==='hello')net.id=m.id;
