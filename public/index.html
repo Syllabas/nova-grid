@@ -106,6 +106,12 @@ tr.pod td.p{color:var(--fg)}
 
 #pauseBtn{left:50%;top:1.6cqw;transform:translateX(-50%);pointer-events:auto;font:700 1.4cqw var(--mono);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:.5cqw;padding:.5cqw 1.1cqw;cursor:pointer;opacity:.75}
 #pauseBtn:hover{opacity:1}
+#rpBar{position:absolute;left:1.5cqw;right:1.5cqw;bottom:1.5cqw;display:flex;flex-direction:column;gap:.6cqw;padding:1cqw 1.2cqw;background:rgba(6,7,26,.82);border:1px solid var(--line);border-radius:.6cqw}
+.rpTop{display:flex;justify-content:space-between;font-family:var(--mono);font-size:1.5cqw}.rpTop #rpName{color:var(--amber)}
+#rpSeek{width:100%;accent-color:var(--amber)}
+.rpCtl{display:flex;gap:.8cqw;align-items:center;flex-wrap:wrap}
+.go.sm{font-size:1.3cqw;padding:.5cqw 1.1cqw}
+body.replaying #tl,body.replaying #bl,body.replaying #br,body.replaying #gpTag{display:none}
 #touch{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;padding:0 1.5cqw 9cqw;pointer-events:none}
 #touch div{display:flex;gap:1.5cqw}
 #touch button{pointer-events:auto;width:11cqw;height:11cqw;border-radius:50%;border:1px solid var(--line);background:rgba(9,11,34,.55);color:var(--fg);font:700 2cqw var(--display);touch-action:none}
@@ -172,7 +178,7 @@ body.touch #touch{display:flex}
           <div class="lbl">BANDE</div><div class="colpick"><input type="range" id="h2" class="hue" min="0" max="359" aria-label="Teinte de la bande"><input type="range" id="t2" class="tone" min="0" max="100" aria-label="Nuance de la bande"><span class="chip" id="sw2"></span></div>
         </div>
       </div>
-      <div class="ctl"><button class="go" id="start">ENTRER AU PADDOCK</button><span class="note">Qualifs chrono, grille de 4 de front, 3 tours. L'énergie est ton bouclier : recharge-la dans la bande rose, boost dès le 2e tour.</span></div>
+      <div class="ctl"><button class="go" id="start">ENTRER AU PADDOCK</button><button class="go ghost" id="bdOpen">CLASSEMENTS CHRONO</button><span class="note">Qualifs chrono, grille de 4 de front, 3 tours. L'énergie est ton bouclier : recharge-la dans la bande rose, boost dès le 2e tour.</span></div>
     </div>
   </div>
 
@@ -205,6 +211,28 @@ body.touch #touch{display:flex}
       <button class="go ghost" id="pRestart">RECOMMENCER</button>
       <button class="go ghost" id="pQuit">QUITTER</button>
       <p class="note" id="pNote"></p>
+    </div>
+  </div>
+
+  <div id="rpBar" hidden>
+    <div class="rpTop"><span id="rpName"></span><span id="rpTime"></span></div>
+    <input type="range" id="rpSeek" min="0" max="1000" value="0" aria-label="Position dans le replay">
+    <div class="rpCtl">
+      <button class="go ghost sm" id="rpRestart" aria-label="Revenir au début">⏮</button><button class="go ghost sm" id="rpPlay" aria-label="Lecture ou pause">❚❚</button>
+      <div class="seg" id="rpSpeed"></div><div class="seg" id="rpCam"></div>
+      <div class="seg" id="rpWho"><button id="rpPrev" aria-label="Pilote précédent">◀</button><button id="rpLeader">TÊTE</button><button id="rpMe">MOI</button><button id="rpNext" aria-label="Pilote suivant">▶</button></div>
+      <button class="go sm" id="rpQuit">FERMER</button>
+    </div>
+  </div>
+
+  <!-- time trial leaderboards -->
+  <div class="ov" id="board" hidden>
+    <div class="card wide">
+      <div class="kick">CLASSEMENTS CONTRE-LA-MONTRE · 3 TOURS</div>
+      <div class="seg" id="bdCirc"></div>
+      <div class="tabs" role="tablist"><button role="tab" id="bdLocal" aria-selected="true">CET APPAREIL</button><button role="tab" id="bdOnline" aria-selected="false">EN LIGNE</button></div>
+      <div class="tbl" id="bdTbl"></div>
+      <div class="ctl"><button class="go ghost" id="bdBack">RETOUR AU MENU</button><span class="note">« Voir » lance le replay du chrono, « Défier » te fait courir contre ce fantôme.</span></div>
     </div>
   </div>
 
@@ -248,7 +276,7 @@ body.touch #touch{display:flex}
       <div class="split"><div class="big" id="resRank">1<span>/120</span></div><p id="resLine"></p></div>
       <div class="tabs" role="tablist"><button role="tab" id="tabRace" aria-selected="true">COURSE</button><button role="tab" id="tabChamp" aria-selected="false">PILOTES</button><button role="tab" id="tabTeams" aria-selected="false">ÉCURIES</button><button role="tab" id="tabTTL" hidden>MES TOURS</button><button role="tab" id="tabTTR" hidden>RECORDS (CET APPAREIL)</button><button role="tab" id="tabTTO" hidden>CLASSEMENT EN LIGNE</button></div>
       <div class="tbl" id="resTbl"></div>
-      <div class="ctl"><button class="go" id="next">GRAND PRIX SUIVANT</button><button class="go ghost" id="toMenu">MENU</button><span class="note" id="ptsNote"></span></div>
+      <div class="ctl"><button class="go" id="next">GRAND PRIX SUIVANT</button><button class="go ghost" id="replayBtn">REVOIR</button><button class="go ghost" id="toMenu">MENU</button><span class="note" id="ptsNote"></span></div>
     </div>
   </div>
 </div>
@@ -457,7 +485,7 @@ function mkRacer(dr,s,d){const tm=teams[dr.team];
     boostT:0,padCool:0,lane:d,laneT:1+rnd()*3,bank:0,hitT:0,rankKey:0,pos:0,oi:0,pit:false,qdone:false,lapT0:0,best:0}}
 function setupRace(order){
   mode='race';racers=order.map((dr,g)=>{const gs=gridSpot(g);return mkRacer(dr,gs.s,gs.d)});
-  player=racers.find(r=>r.isP);raceT=0;finishCount=0;elimCount=0;parts.length=0;camH=null;sortAll();
+  player=racers.find(r=>r.isP);raceT=0;finishCount=0;elimCount=0;parts.length=0;camH=null;sortAll();recFrames=[];recT=0;
 }
 function setupQuali(){mode='quali';player=mkRacer(drivers[0],0,0);player.lap=0;racers=[player];raceT=0;parts.length=0;camH=null;sortAll()}
 function sortAll(){
@@ -469,7 +497,7 @@ function sortAll(){
 // ---------- input ----------
 const keys={};let touchSteer=0,touchBoost=false,touchBrake=false,isTouch=matchMedia('(pointer:coarse)').matches;
 if(isTouch)document.body.classList.add('touch');
-addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'&&e.target.type!=='range'||e.target.tagName==='TEXTAREA'))return;if(replayKeys(e))return;keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   if(e.code==='KeyP'||e.code==='Escape')togglePause();if(e.code==='KeyM')cycleSound();if(e.code==='KeyN'){nameMode=(nameMode+1)%3;flash(['NUMÉROS','NOMS PROCHES','ÉTIQUETTES MASQUÉES'][nameMode],'',0.8);$('nameSel').querySelectorAll('button').forEach((x,i)=>x.setAttribute('aria-pressed',i===nameMode))}});
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
@@ -644,6 +672,7 @@ function step(dt){
     if(ffwd&&r.dr.human)continue;
     if(r.isP&&!r.finished&&state==='race')playerControl(r,dt);else aiControl(r,dt)}
   sortAll();collide();
+  if(mode==='race'&&recFrames.length<9000){recT+=dt;if(recT>=REC_DT){recT-=REC_DT;const f=new Float32Array(racers.length*5);racers.forEach((r,i)=>{f[i*5]=r.lap*L+r.s;f[i*5+1]=r.d;f[i*5+2]=r.bank;f[i*5+3]=r.h;f[i*5+4]=(r.alive?1:0)|(r.boostT>0?2:0)|(r.finished?4:0)});recFrames.push(f)}}
 }
 function stepParts(dt){for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=320*dt;if(p.z<0){p.z=0;p.vz*=-0.3}p.vx*=0.97;p.vy*=0.97;p.life-=dt;if(p.life<=0)parts.splice(i,1)}}
 
@@ -658,16 +687,23 @@ function simLap(dr,skillOverride){
 }
 
 // ---------- render ----------
+let camMode=0,lastCm=0,tvAnchor=0,tvSide=1,viewRacers=null,viewTarget=null,recFrames=[],recT=0;const REC_DT=0.1;
 let camH=null,camX=0,camY=0,camY0=58,T=0,ghost=null,ghostRec=[],ghostT=0,lapStart=0,ttLaps=[],nameMode=0,ttPrevTot=0;const GSTEP=0.1;
 function render(dt){
-  const t=trackAt(player.s);
-  const px=t.x+t.nx*player.d,py=t.y+t.ny*player.d;
-  const want=t.th+Math.atan2(player.vd,Math.max(250,player.v))*0.55;
-  camH=camH===null?want:camH+angD(want,camH)*Math.min(1,dt*7);
+  const P=viewTarget||player,RL=viewRacers||racers,cm=state==='replay'?camMode:0;
+  const t=trackAt(P.s);
+  const px=t.x+t.nx*P.d,py=t.y+t.ny*P.d;
+  const want=t.th+Math.atan2(P.vd||0,Math.max(250,P.v||900))*0.55;
+  const sh=shake>0&&state!=='replay'?(Math.random()-.5)*shake:0;
+  let back=CAMBACK,chT=CAMH+P.h*0.8;
+  if(cm===1){back=440;chT=175+P.h*0.5}else if(cm===2){back=-6;chT=22+P.h}
+  if(cm===3){const pos=P.lap*L+P.s;if(!tvAnchor||pos>tvAnchor+120||pos<tvAnchor-2200){tvAnchor=pos+900+Math.random()*500;tvSide=Math.random()<.5?-1:1}
+    const a=trackAt(tvAnchor);camX=a.x+a.nx*(HALF+110)*tvSide;camY=a.y+a.ny*(HALF+110)*tvSide;camH=Math.atan2(py-camY,px-camX);chT=70}
+  else{camH=camH===null||cm!==lastCm?want:camH+angD(want,camH)*Math.min(1,dt*7);}
   const fx=Math.cos(camH),fy=Math.sin(camH),rx=-fy,ry=fx;
-  const sh=shake>0?(Math.random()-.5)*shake:0;
-  camX=px-fx*CAMBACK;camY=py-fy*CAMBACK;
-  camY0+=(CAMH+player.h*0.8-camY0)*Math.min(1,dt*10);const CH=camY0;
+  if(cm!==3){camX=px-fx*back;camY=py-fy*back}
+  if(cm!==lastCm)camY0=chT;lastCm=cm;
+  camY0+=(chT-camY0)*Math.min(1,dt*10);const CH=camY0;
   let o=HOR*W;
   for(let y=HOR;y<H;y++){
     const z=CH*F/(y-HOR+0.5),k=z/F;
@@ -683,9 +719,9 @@ function render(dt){
   ctx.drawImage(sky,-off,HOR-70);ctx.drawImage(sky,PANO-off,HOR-70);
   ctx.fillStyle=fogGrad;ctx.fillRect(0,HOR,W,40);
   const list=[];
-  for(const r of racers){if(!r.alive)continue;const q=trackAt(r.s);const wx=q.x+q.nx*r.d-camX,wy=q.y+q.ny*r.d-camY;
-    const z=wx*fx+wy*fy;if(z<25||z>2600)continue;const sx=W/2+(wx*rx+wy*ry)*F/z;if(sx<-60||sx>W+60)continue;list.push([z,sx,r])}
-  if(mode==='tt'&&ghost&&state!=='count'){const fi=raceT/GSTEP,gi=Math.min(Math.floor(fi),ghost.g.length-1),g0=ghost.g[gi],g1=ghost.g[Math.min(gi+1,ghost.g.length-1)],fr=Math.min(1,fi-Math.floor(fi));
+  for(const r of RL){if(!r.alive||(cm===2&&r===P))continue;const q=trackAt(r.s);const wx=q.x+q.nx*r.d-camX,wy=q.y+q.ny*r.d-camY;
+    const z=wx*fx+wy*fy;if(z<(cm===2?6:25)||z>(cm===1?3400:2600))continue;const sx=W/2+(wx*rx+wy*ry)*F/z;if(sx<-60||sx>W+60)continue;list.push([z,sx,r])}
+  if(mode==='tt'&&ghost&&state!=='count'&&state!=='replay'){const fi=raceT/GSTEP,gi=Math.min(Math.floor(fi),ghost.g.length-1),g0=ghost.g[gi],g1=ghost.g[Math.min(gi+1,ghost.g.length-1)],fr=Math.min(1,fi-Math.floor(fi));
     const gs=g0&&[g0[0]+(g1[0]-g0[0])*fr,g0[1]+(g1[1]-g0[1])*fr,g0[2],g0[3]];
     if(gs&&!player.finished&&fi<ghost.g.length){const q=trackAt(gs[0]);const wx=q.x+q.nx*gs[1]-camX,wy=q.y+q.ny*gs[1]-camY,z=wx*fx+wy*fy;
       if(z>25&&z<2600)list.push([z,W/2+(wx*rx+wy*ry)*F/z,{ghost:true,name:ghost.name,col:'#e9ecff',sec:'#53e0ff',dark:'#7d84b8',eng:'#7ff0ff',hull:ghost.hull,bank:gs[2],h:gs[3],id:7,boostT:0,pit:false}])}}
@@ -695,11 +731,11 @@ function render(dt){
   const tags=[];
   for(const [z,sx,r,p,ob] of list){const sc=F/z,gy=HOR+CH*sc;
     if(ob){drawPylon(sx,gy,sc,ob);continue}
-    if(r){if(r.ghost)ctx.globalAlpha=0.45;drawShip(ctx,sx,gy,sc,r,T);ctx.globalAlpha=1;if(nameMode<2&&!r.isP&&z<(nameMode?420:620))tags.push([sx,gy-(22+(r.h||0))*sc,z,r])}else{ctx.fillStyle=p.c;const s=Math.max(1,2.4*sc);ctx.fillRect(sx-s/2,gy-p.z*sc-s/2,s,s)}}
-  if(player.boostT>0&&player.alive){ctx.strokeStyle='rgba(255,181,71,.45)';ctx.lineWidth=1;ctx.beginPath();
+    if(r){if(r.ghost)ctx.globalAlpha=0.45;drawShip(ctx,sx,gy,sc,r,T);ctx.globalAlpha=1;if(nameMode<2&&r!==P&&(!r.isP||state==='replay')&&z<(nameMode?420:620))tags.push([sx,gy-(22+(r.h||0))*sc,z,r])}else{ctx.fillStyle=p.c;const s=Math.max(1,2.4*sc);ctx.fillRect(sx-s/2,gy-p.z*sc-s/2,s,s)}}
+  if(P.boostT>0&&P.alive&&cm!==3){ctx.strokeStyle='rgba(255,181,71,.45)';ctx.lineWidth=1;ctx.beginPath();
     for(let k=0;k<14;k++){const a=Math.random()*6.28,r0=90+Math.random()*60;ctx.moveTo(W/2+Math.cos(a)*r0,HOR+30+Math.sin(a)*r0*.6);ctx.lineTo(W/2+Math.cos(a)*(r0+40),HOR+30+Math.sin(a)*(r0+40)*.6)}ctx.stroke()}
-  const roll=rollAt(player.s);present(roll);drawNames(roll?[]:tags);
-  if(mode==='race'&&player.alive&&player.energy<25&&!player.finished&&(T*4|0)%2){vctx.strokeStyle='rgba(255,84,112,.6)';vctx.lineWidth=3;vctx.strokeRect(1.5,1.5,W-3,H-3)}
+  const roll=cm===3?0:rollAt(P.s);present(roll);drawNames(roll?[]:tags);
+  if(state!=='replay'&&mode==='race'&&player.alive&&player.energy<25&&!player.finished&&(T*4|0)%2){vctx.strokeStyle='rgba(255,84,112,.6)';vctx.lineWidth=3;vctx.strokeRect(1.5,1.5,W-3,H-3)}
 }
 // name tags on a full-resolution overlay so text stays sharp
 const nc=$('names'),nx=nc.getContext('2d');let ncW=0,ncH=0;
@@ -802,10 +838,11 @@ function paintMini(){MS=Math.min((mini.width-30)/(maxX-minX),(mini.height-30)/(m
   for(const [a,b] of (circ.tubes||[])){g.beginPath();for(let i=Math.floor(a*N);i<=b*N;i++){const[x,y]=mp(TX[i],TY[i]);g.lineTo(x,y)}g.strokeStyle='#53e0ff';g.lineWidth=5;g.stroke()}
   for(const rs of RAMPS){const i=rs/STEP|0;const[x,y]=mp(TX[i],TY[i]);g.fillStyle='#ffb547';g.beginPath();g.arc(x,y,4,0,6.283);g.fill()}
   const[sx,sy]=mp(TX[0],TY[0]);g.fillStyle='#eef0ff';g.fillRect(sx-1.5,sy-6,3,12)}
-function drawMini(){mg.clearRect(0,0,mini.width,mini.height);mg.drawImage(mbase,0,0);
-  for(const r of racers){if(!r.alive||r.isP)continue;const q=trackAt(r.s);const[x,y]=mp(q.x,q.y);mg.fillStyle=r.rank<=3?'#eef0ff':r.col;mg.fillRect(x-1.5,y-1.5,3,3)}
+function drawMini(){mg.clearRect(0,0,mini.width,mini.height);mg.drawImage(mbase,0,0);const player=viewTarget||window.__pl||curPlayer();
+  for(const r of (viewRacers||racers)){if(!r.alive||r===player)continue;const q=trackAt(r.s);const[x,y]=mp(q.x,q.y);mg.fillStyle=r.rank<=3?'#eef0ff':r.col;mg.fillRect(x-1.5,y-1.5,3,3)}
   const q=trackAt(player.s);const[x,y]=mp(q.x,q.y);mg.fillStyle=player.col;mg.beginPath();mg.arc(x,y,5,0,6.283);mg.fill();mg.strokeStyle='#06071a';mg.lineWidth=1.5;mg.stroke()}
 
+const curPlayer=()=>player;
 // ---------- HUD ----------
 const rankSpan=$('rank').lastChild,rankB=$('rank').firstChild,lapEl=$('lap'),timeEl=$('time'),aliveEl=$('alive'),spdB=$('spd').firstChild,enEl=$('en'),bstEl=$('boostst'),topLbl=$('topLbl');
 const fmt=t=>{const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(2)};
@@ -833,7 +870,7 @@ function hud(dt){
 }
 
 // ---------- paddock flow ----------
-const show=id=>{for(const o of['menu','intro','qres','res','lobby'])$(o).hidden=o!==id};
+const show=id=>{for(const o of['menu','intro','qres','res','lobby','board'])$(o).hidden=o!==id};
 function segInit(id,items,cur,onPick){const el=$(id);el.innerHTML=items.map((t,i)=>`<button data-i="${i}" aria-pressed="${i===cur}">${t}</button>`).join('');
   el.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));onPick(+b.dataset.i)}))}
 $('modeSel').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{$('modeSel').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));champMode=b.dataset.v;$('ghostRow').hidden=!(champMode==='tt'&&net.ok);$('circRow').hidden=champMode==='champ'||champMode==='online';$('start').textContent=champMode==='tt'?'LANCER LE CHRONO':champMode==='online'?'OUVRIR LE SALON':'ENTRER AU PADDOCK'}));
@@ -921,7 +958,7 @@ function finishRace2(out){
   $('next').textContent=isChamp&&!last?'GRAND PRIX SUIVANT':'NOUVELLE PARTIE';
   $('tabTTL').hidden=$('tabTTR').hidden=$('tabTTO').hidden=true;$('tabRace').hidden=false;$('tabChamp').hidden=!isChamp;$('tabTeams').hidden=!isChamp;
   renderTab(isChamp&&last?'champ':'race');
-  state='results';show('res');
+  $('replayBtn').hidden=recFrames.length<3;state='results';show('res');
 }
 function fastestLap(cls){return cls.filter(r=>r.finished&&r.best).sort((a,b)=>a.best-b.best)[0]||null}
 function teamStand(){return teams.map((t,i)=>{const ds=drivers.filter(d=>d.team===i);const n=ds[0].gp.length;const gp=[];for(let k=0;k<n;k++)gp.push(ds.reduce((a,d)=>a+d.gp[k],0));return{t,i,ds,gp,pts:ds.reduce((a,d)=>a+d.pts,0)}}).sort((a,b)=>b.pts-a.pts||a.i-b.i)}
@@ -960,10 +997,10 @@ function saveRecord(v){recCache[recKey()]=v;try{localStorage.setItem(recKey(),JS
 function ghostDelta(){if(!ghost||!ghost.g.length||state==='count')return null;const g=ghost.g,p0=player.lap*L+player.s;if(p0>g[g.length-1][0])return null;let lo=0,hi=g.length-1;
   while(lo<hi){const m=(lo+hi)>>1;if(g[m][0]<p0)lo=m+1;else hi=m}
   const a=g[Math.max(0,lo-1)],b=g[lo],f=b[0]>a[0]?(p0-a[0])/(b[0]-a[0]):1;return raceT-(Math.max(0,lo-1)+f)*GSTEP}
-let ghostName=null,ghostSrc=0,ttBoard=null,ttTab='laps';
+let ttGhostAtStart=null,ghostName=null,ghostSrc=0,ttBoard=null,ttTab='laps';
 function newTT(){initAudio();if(ac&&ac.state==='suspended')ac.resume();if(!drivers.length)makeDrivers();drivers[0].name=myName();applyLivery();
   loadTrack(singleCirc);mode='tt';player=mkRacer(drivers[0],0,0);player.lap=0;player.tb=3;racers=[player];raceT=0;lapStart=0;ttLaps=[];ghostRec=[];ghostT=0;parts.length=0;camH=null;
-  const rec=ttRecord();ghost=rec.ghost&&rec.gv===2?{g:rec.ghost,hull:rec.hull,name:'ton record'}:null;sortAll();
+  const rec=ttRecord();ghost=rec.ghost&&rec.gv===2?{g:rec.ghost,hull:rec.hull,name:'ton record'}:null;ttGhostAtStart=ghost;sortAll();
   if(ghostSrc===1&&net.ok)send({t:'ttghost',circ:circ.name,name:ghostName});
   $('gpTag').textContent='CONTRE-LA-MONTRE · '+circ.name.toUpperCase();
   show(null);state='count';countNext='tt';countT=3.999;lastCount=-1}
@@ -976,7 +1013,7 @@ function showTT(){
   $('resLine').innerHTML=`Meilleur tour <b>${fmt(best)}</b>. `+(!prevTot||total<prevTot?'<b>Nouveau record</b> sur ce circuit ! Ton fantôme rejouera ces 3 tours.':`Record du circuit : <b>${fmt(prevTot)}</b> (${fmtGap(total-prevTot)}).`)+(net.ok?' Ton chrono est envoyé au classement en ligne.':'');
   $('tabRace').hidden=$('tabChamp').hidden=$('tabTeams').hidden=true;$('tabTTL').hidden=$('tabTTR').hidden=false;$('tabTTO').hidden=!net.ok;
   ttTab='laps';renderTT();$('ptsNote').textContent=net.ok?'':'Le classement en ligne apparaît quand le jeu est ouvert depuis ton serveur.';
-  $('next').textContent='REJOUER';state='results';show('res')}
+  $('next').textContent='REJOUER';$('replayBtn').hidden=ghostRec.length<3;state='results';show('res')}
 function renderTT(){
   const rec=ttRecord(),best=Math.min(...ttLaps);
   for(const[id,k]of[['tabTTL','laps'],['tabTTR','local'],['tabTTO','online']])$(id).setAttribute('aria-selected',ttTab===k);
@@ -986,8 +1023,9 @@ function renderTT(){
   if(!rows){$('resTbl').innerHTML='<p class="note" style="padding:1cqw">Chargement du classement…</p>';return}
   const byLap=rows.slice().sort((a,b)=>a.lap-b.lap),lapRank=new Map(byLap.map((r,i)=>[r,i+1]));
   $('resTbl').innerHTML='<table><thead><tr><th>POS</th><th>PILOTE</th><th class="n">TOTAL 3 TOURS</th><th class="n">MEILLEUR TOUR</th><th class="n">RANG TOUR</th>'+(ttTab==='local'?'<th class="n">DATE</th>':'<th class="n">FANTÔME</th>')+'</tr></thead><tbody>'+
-    rows.map((r,i)=>`<tr class="${r.name===myName()&&(ttTab==='online'||Math.abs(r.total-player.ftime)<0.006)?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${esc(r.name)}</td><td class="n">${fmt(r.total)}</td><td class="n${lapRank.get(r)===1?' fl':''}">${fmt(r.lap)}</td><td class="n t">${lapRank.get(r)}</td>`+(ttTab==='local'?`<td class="n t">${new Date(r.d).toLocaleDateString('fr-FR')}</td>`:`<td class="n">${r.ghost?`<button class="go ghost dueler" data-n="${esc(r.name)}" style="font-size:1.1cqw;padding:.3cqw .9cqw">DÉFIER</button>`:''}</td>`)+'</tr>').join('')+'</tbody></table>';
+    rows.map((r,i)=>`<tr class="${r.name===myName()&&(ttTab==='online'||Math.abs(r.total-player.ftime)<0.006)?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${esc(r.name)}</td><td class="n">${fmt(r.total)}</td><td class="n${lapRank.get(r)===1?' fl':''}">${fmt(r.lap)}</td><td class="n t">${lapRank.get(r)}</td>`+(ttTab==='local'?`<td class="n t">${new Date(r.d).toLocaleDateString('fr-FR')}</td>`:`<td class="n">${r.ghost?`<button class="go ghost sm watcher" data-n="${esc(r.name)}">VOIR</button> <button class="go ghost sm dueler" data-n="${esc(r.name)}">DÉFIER</button>`:''}</td>`)+'</tr>').join('')+'</tbody></table>';
   if(ttTab==='online')$('resTbl').insertAdjacentHTML('beforeend',`<div class="ctl" style="padding:.8cqw"><button class="go ghost" id="ttChal">AFFRONTER LE FANTÔME DU N°1 (3 TOURS)</button></div>`),$('ttChal').addEventListener('click',()=>{ghostSrc=1;ghostName=null;newTT()});
+  $('resTbl').querySelectorAll('.watcher').forEach(b=>b.addEventListener('click',()=>{watchPending=true;bd.circ=CIRCUITS.indexOf(circ);send({t:'ttghost',circ:circ.name,name:b.dataset.n})}));
   $('resTbl').querySelectorAll('.dueler').forEach(b=>b.addEventListener('click',()=>{ghostSrc=1;ghostName=b.dataset.n;newTT()}));
 }
 const canPause=()=>!net.inRace&&['race','count','quali','tt','done'].includes(state);
@@ -1112,7 +1150,7 @@ function showOnlineResults(m){
     `<b>${mine?mine.p:0} pts</b> marqués.`+(fl?` Meilleur tour : <b>${esc(fl.n)}</b> en ${fmt(fl.b)} (+2 pts).`:'')+
     (m.gp&&st.length?(m.final?` <b>Champion : ${esc(st[0][0])}</b> avec ${st[0][1]} pts !`:` Championnat : ${esc(st[0][0])} mène avec ${st[0][1]} pts.`):'');
   $('tabTTL').hidden=$('tabTTR').hidden=$('tabTTO').hidden=true;$('tabRace').hidden=false;$('tabChamp').hidden=!st.length;$('tabTeams').hidden=true;
-  renderOnline(m.final?'champ':'race');$('next').textContent='RETOUR AU SALON';show('res');scrollToMe('resTbl');
+  renderOnline(m.final?'champ':'race');$('next').textContent='RETOUR AU SALON';$('replayBtn').hidden=recFrames.length<3;show('res');scrollToMe('resTbl');
 }
 let lastOnline=null;
 function renderOnline(which){const m=lastOnline,cls=m.cls,win=cls[0];
@@ -1134,10 +1172,80 @@ function onNet(m){
   else if(m.t==='ai'){if(isHost())return;const now=performance.now();for(let i=0;i<net.ais.length;i++)applyTgt(net.ais[i],m.d,i*9,now)}
   else if(m.t==='res')showOnlineResults(m);
   else if(m.t==='ttboard'){ttBoard=m;if(state==='results'&&mode==='tt'&&ttTab==='online')renderTT()}
-  else if(m.t==='ttghostdata'){if(mode==='tt'&&m.circ===circ.name&&m.ghost&&m.ghost.length)ghost={g:m.ghost,hull:m.hull|0,name:m.name,ext:true}}
+  else if(m.t==='ttghostdata'){if(watchPending){watchPending=false;if(m.ghost&&m.ghost.length){loadTrack(CIRCUITS.findIndex(c=>c.name===m.circ));watchGhost({g:m.ghost,hull:m.hull|0,name:m.name})}}
+    else if(mode==='tt'&&m.circ===circ.name&&m.ghost&&m.ghost.length){ghost={g:m.ghost,hull:m.hull|0,name:m.name,ext:true};ttGhostAtStart=ghost}}
+  else if(m.t==='ttboard'&&!$('board').hidden&&m.circ===CIRCUITS[bd.circ].name){ttBoard=m;renderBoard()}
   else if(m.t==='left'){const r=net.byId.get(m.id);if(r&&r.alive){r.alive=false;r.elim=elimCount++;r.elap=clamp(r.lap+1,1,LAPS)}}
   else if(m.t==='abort'){if(net.inRace){net.inRace=false;flash('L\'HÔTE A QUITTÉ','COURSE ANNULÉE',2.5);setTimeout(backToLobby,1500)}}
 }
+
+// ---------- replays ----------
+const rp={frames:null,actors:null,t:0,speed:1,playing:true,target:0,ret:'res',dur:0,label:''};
+const CAMS=['Poursuite','Hélico','Embarquée','TV'];
+function actorOf(r){return{id:r.id,name:r.name,col:r.col,sec:r.sec,dark:r.dark,eng:r.eng,hull:r.hull,isP:!!r.isP,s:0,lap:0,d:0,v:900,vd:0,h:0,bank:0,boostT:0,pit:false,alive:true,rank:1}}
+function framesFromSamples(list){const n=list.length,len=Math.max(...list.map(g=>g.length)),out=[];
+  for(let f=0;f<len;f++){const a=new Float32Array(n*5);list.forEach((g,i)=>{const smp=g[Math.min(f,g.length-1)];a[i*5]=smp[0];a[i*5+1]=smp[1];a[i*5+2]=smp[2];a[i*5+3]=smp[3];a[i*5+4]=f<g.length?1:5});out.push(a)}return out}
+function startReplay(frames,actors,ret,target,label){
+  if(!frames||frames.length<3)return;rp.frames=frames;rp.actors=actors;rp.t=0;rp.speed=1;rp.playing=true;rp.target=target||0;rp.ret=ret;rp.dur=(frames.length-1)*REC_DT;rp.label=label||'';
+  viewRacers=actors;viewTarget=actors[rp.target];camMode=0;tvAnchor=0;camH=null;parts.length=0;
+  state='replay';show(null);$('pauseOv').hidden=true;$('rpBar').hidden=false;document.body.classList.add('replaying');setRpUi();updateReplay(0)}
+function stopReplay(){viewRacers=null;viewTarget=null;camMode=0;$('rpBar').hidden=true;document.body.classList.remove('replaying');state='results';camH=null;
+  if(rp.ret==='board'){state='menu';previewCircuit(singleCirc);openBoard(bd.circ)}else show(rp.ret)}
+function updateReplay(dt){if(rp.playing){rp.t=Math.min(rp.dur,rp.t+dt*rp.speed);if(rp.t>=rp.dur)rp.playing=false}
+  const fi=rp.t/REC_DT,i0=Math.min(Math.floor(fi),rp.frames.length-1),i1=Math.min(i0+1,rp.frames.length-1),fr=fi-i0,A=rp.frames[i0],B=rp.frames[i1];
+  rp.actors.forEach((a,i)=>{const o=i*5,pos=A[o]+(B[o]-A[o])*fr,lap=Math.floor(pos/L);a.lap=lap;a.s=pos-lap*L;a.d=A[o+1]+(B[o+1]-A[o+1])*fr;a.bank=A[o+2];a.h=A[o+3]+(B[o+3]-A[o+3])*fr;
+    const fl=A[o+4];a.alive=!!(fl&1);a.boostT=fl&2?0.2:0;a.v=Math.abs(B[o]-A[o])/REC_DT;a.pos=pos;a.done=!!(fl&4)});
+  const ord=rp.actors.slice().sort((a,b)=>(b.alive-a.alive)||(b.pos-a.pos));ord.forEach((a,i)=>a.rank=i+1);
+  viewTarget=rp.actors[rp.target];
+  $('rpName').textContent=`${rp.label}${viewTarget.rank}e · ${viewTarget.name}${viewTarget.alive?'':' (K.O.)'} · tour ${clamp(viewTarget.lap+1,1,LAPS)}/${LAPS}`;
+  $('rpTime').textContent=`${fmt(rp.t)} / ${fmt(rp.dur)}`;if(document.activeElement!==$('rpSeek'))$('rpSeek').value=Math.round(rp.t/rp.dur*1000);
+  $('rpPlay').textContent=rp.playing?'❚❚':'▶'}
+function setRpUi(){$('rpSpeed').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',[0.5,1,2,4][i]===rp.speed));$('rpCam').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',i===camMode));
+  $('rpWho').hidden=rp.actors&&rp.actors.length<2}
+function rpPick(i){rp.target=(i+rp.actors.length)%rp.actors.length;tvAnchor=0;camH=null}
+function rpByRank(k){const cur=rp.actors[rp.target].rank+k,a=rp.actors.find(x=>x.rank===cur);if(a)rpPick(rp.actors.indexOf(a))}
+segInit('rpSpeed',['×0,5','×1','×2','×4'],1,i=>{rp.speed=[0.5,1,2,4][i]});
+segInit('rpCam',CAMS,0,i=>{camMode=i;tvAnchor=0;camH=null});
+$('rpPrev').addEventListener('click',()=>rpByRank(-1));$('rpNext').addEventListener('click',()=>rpByRank(1));
+$('rpLeader').addEventListener('click',()=>{const a=rp.actors.find(x=>x.rank===1);rpPick(rp.actors.indexOf(a))});
+$('rpMe').addEventListener('click',()=>{const i=rp.actors.findIndex(x=>x.isP);if(i>=0)rpPick(i)});
+$('rpPlay').addEventListener('click',()=>{if(rp.t>=rp.dur)rp.t=0;rp.playing=!rp.playing});
+$('rpRestart').addEventListener('click',()=>{rp.t=0;rp.playing=true;tvAnchor=0});
+$('rpSeek').addEventListener('input',e=>{rp.t=+e.target.value/1000*rp.dur;tvAnchor=0});
+$('rpQuit').addEventListener('click',stopReplay);
+function replayKeys(e){if(state!=='replay')return false;
+  if(e.code==='Space'){rp.playing=!rp.playing;e.preventDefault()}else if(e.code==='KeyC'){camMode=(camMode+1)%4;tvAnchor=0;camH=null;setRpUi()}
+  else if(e.code==='ArrowLeft')rpByRank(-1);else if(e.code==='ArrowRight')rpByRank(1);else if(e.code==='Escape')stopReplay();else return false;return true}
+$('replayBtn').addEventListener('click',()=>{
+  if(mode==='tt'){const runs=[ghostRec],act=[actorOf(player)];if(ttGhostAtStart){runs.push(ttGhostAtStart.g);act.push(Object.assign(actorOf(player),{name:'Fantôme · '+ttGhostAtStart.name,col:'#e9ecff',sec:'#53e0ff',dark:'#7d84b8',isP:false,id:7}))}
+    startReplay(framesFromSamples(runs),act,'res',0,'');return}
+  const act=racers.map(actorOf);startReplay(recFrames,act,'res',Math.max(0,racers.indexOf(player)),'')});
+
+// ---------- time-trial leaderboards (menu) ----------
+const bd={circ:0,tab:'local',rows:null};
+function ttRecordFor(name){const k='novagrid-tt-'+name;if(recCache[k])return recCache[k];let v={};try{v=JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){}return recCache[k]=v}
+segInit('bdCirc',CIRCUITS.map(c=>c.name),0,i=>{bd.circ=i;bd.rows=null;if(bd.tab==='online')send({t:'ttget',circ:CIRCUITS[i].name});renderBoard()});
+function openBoard(ci){bd.circ=ci;$('bdCirc').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',i===ci));$('bdOnline').hidden=!net.ok;if(!net.ok)bd.tab='local';
+  if(bd.tab==='online')send({t:'ttget',circ:CIRCUITS[ci].name});renderBoard();show('board')}
+$('bdOpen').addEventListener('click',()=>{unlock();openBoard(singleCirc)});
+$('bdBack').addEventListener('click',()=>show('menu'));
+$('bdLocal').addEventListener('click',()=>{bd.tab='local';renderBoard()});
+$('bdOnline').addEventListener('click',()=>{bd.tab='online';bd.rows=null;send({t:'ttget',circ:CIRCUITS[bd.circ].name});renderBoard()});
+function renderBoard(){const cn=CIRCUITS[bd.circ].name;$('bdLocal').setAttribute('aria-selected',bd.tab==='local');$('bdOnline').setAttribute('aria-selected',bd.tab==='online');
+  let rows;const rec=ttRecordFor(cn);
+  if(bd.tab==='local')rows=(rec.runs||[]).map(r=>({name:r.n,total:r.t,lap:r.l,d:r.d,ghost:rec.gv===2&&rec.ghost&&Math.abs(r.t-rec.total)<0.006,local:true}));
+  else rows=ttBoard&&ttBoard.circ===cn?ttBoard.rows:null;
+  if(!rows){$('bdTbl').innerHTML='<p class="note" style="padding:1cqw">Chargement du classement…</p>';return}
+  if(!rows.length){$('bdTbl').innerHTML=`<p class="note" style="padding:1cqw">Aucun chrono sur ${esc(cn)} pour l'instant.</p>`;return}
+  const best=Math.min(...rows.map(r=>r.lap));
+  $('bdTbl').innerHTML='<table><thead><tr><th>POS</th><th>PILOTE</th><th class="n">TOTAL 3 TOURS</th><th class="n">MEILLEUR TOUR</th><th class="n">REPLAY</th></tr></thead><tbody>'+
+    rows.map((r,i)=>`<tr class="${r.name===myName()?'me':''}${i<3?' pod':''}"><td class="p">${i+1}</td><td>${esc(r.name)}</td><td class="n">${fmt(r.total)}</td><td class="n${r.lap===best?' fl':''}">${fmt(r.lap)}</td><td class="n">${r.ghost?`<button class="go ghost sm bdW" data-n="${esc(r.name)}" data-l="${r.local?1:0}">VOIR</button> <button class="go ghost sm bdD" data-n="${esc(r.name)}" data-l="${r.local?1:0}">DÉFIER</button>`:''}</td></tr>`).join('')+'</tbody></table>';
+  $('bdTbl').querySelectorAll('.bdW').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.l==='1'){loadTrack(bd.circ);const g={g:rec.ghost,hull:rec.hull,name:b.dataset.n};watchGhost(g)}else{watchPending=true;send({t:'ttghost',circ:cn,name:b.dataset.n})}}));
+  $('bdTbl').querySelectorAll('.bdD').forEach(b=>b.addEventListener('click',()=>{singleCirc=bd.circ;$('circSel').querySelectorAll('button').forEach((x,i)=>x.setAttribute('aria-pressed',i===singleCirc));
+    if(b.dataset.l==='1'){ghostSrc=0;ghostName=null}else{ghostSrc=1;ghostName=b.dataset.n}newTT()}))}
+let watchPending=false;
+function watchGhost(g){const a=Object.assign(actorOf({id:7,name:g.name,col:'#e9ecff',sec:'#53e0ff',dark:'#7d84b8',eng:'#7ff0ff',hull:g.hull|0,isP:false}),{});
+  mode='tt';startReplay(framesFromSamples([g.g]),[a],'board',0,'Chrono de ')}
 
 let last=performance.now();
 function frame(now){
@@ -1147,11 +1255,12 @@ function frame(now){
       if(c!==lastCount){lastCount=c;if(c>0){flash(String(c),'',0.9);blip(440,0.15,'square',0.07)}
         else{state=countNext;if(countNext==='race'){flash('GO !','DÉPART PROTÉGÉ 6 S',1.2)}else flash('GO !','',0.8);blip(880,0.35,'square',0.08)}}}
     if(['race','done','out','quali','tt'].includes(state)){for(let k=0;k<2;k++)step(dt/2)}
+    if(state==='replay')updateReplay(dt);
     stepParts(dt);if(shake>0)shake=Math.max(0,shake-dt*14);
     if(msgT>0){msgT-=dt;if(msgT<=0)msgEl.classList.remove('on')}
   }
   netTick(paused?0:dt);
-  if(ac){const racing=['count','race','done','out','quali','tt','sim'].includes(state);const want=racing?Math.max(0,CIRCUITS.indexOf(circ)):6;if(want!==mus.cur)playSong(want);
+  if(ac){const racing=['count','race','done','out','quali','tt','sim','replay'].includes(state);const want=racing?Math.max(0,CIRCUITS.indexOf(circ)):6;if(want!==mus.cur)playSong(want);
     const mg=sndMode===0?(paused?0.18:0.55):0;if(Math.abs(musG.gain.value-mg)>0.01)musG.gain.value=mg}
   render(dt);hud(dt);
   if(eng){const quiet=paused||!player.alive||!['race','done','quali','count','tt'].includes(state);eng.frequency.setTargetAtTime(quiet?30:55+player.v*0.13+(player.boostT>0?40:0),ac.currentTime,0.05);engF.frequency.setTargetAtTime(400+player.v*1.2,ac.currentTime,0.05)}
